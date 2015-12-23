@@ -82,7 +82,6 @@ const (
     SYMOPT_DEBUG                     = 0x80000000
 )
 
-type HANDLE  syscall.Handle
 type DWORD   uint32
 type DWORD64 uint64
 
@@ -101,7 +100,7 @@ var (
     symCleanup             = dbgHelpDll.NewProc("SymCleanup")
 )
 
-func SymCleanup (proc HANDLE) error {
+func SymCleanup (proc syscall.Handle) error {
     ret, _, err := symCleanup.Call(uintptr(proc))
     if uint32(ret) == 0 {
         return err
@@ -118,7 +117,7 @@ func SymSetOptions (optFlags uint32) uint32 {
     return uint32(ret)
 }
 
-func SymInitialize (proc HANDLE, searchPath string, invadeProcess bool) error {
+func SymInitialize (proc syscall.Handle, searchPath string, invadeProcess bool) error {
     ret, _, err := symInitialize.Call(
         uintptr(proc),
         uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(searchPath))),

@@ -21,7 +21,11 @@ import (
 func TestSymlookup (t *testing.T) {
     fmt.Println("Modules Loaded")
 
-    proc := syscall.GetCurrentProcess()
+    proc, err := syscall.GetCurrentProcess()
+    if err != nil {
+        t.Fail()
+    }
+    
     opts := SymSetOptions(
         SYMOPT_EXACT_SYMBOLS | 
         SYMOPT_LOAD_LINES | 
@@ -31,7 +35,7 @@ func TestSymlookup (t *testing.T) {
 
     fmt.Printf("Currenet options mask 0x%x\n", opts)
 
-    err := SymInitialize(proc, "C:\\ul\\SymSrv\\test", false)
+    err = SymInitialize(proc, "", false)
     if err != nil {
         panic(err)
     }
