@@ -13,7 +13,7 @@
 package pdh
 
 // Stdlib imports.
-import(
+import (
     "syscall"
     "testing"
     "time"
@@ -24,7 +24,7 @@ const (
 )
 
 
-func TestCounterCollection(t *testing.T) {
+func TestCounterCollection (t *testing.T) {
     query, err := PdhOpenQuery()
     checkErr(err, "PdhOpenQuery", t)
     t.Log("Query opened...")
@@ -66,7 +66,7 @@ func TestCounterCollection(t *testing.T) {
     t.Log("Closed query...")
 }
 
-func TestGetDllVersion(t *testing.T) {
+func TestGetDllVersion (t *testing.T) {
     ver, err := PdhGetDllVersion()
     if err != nil {
         t.Fatalf("PdhGetDllVersion returned error code %#x\n", err)
@@ -75,7 +75,7 @@ func TestGetDllVersion(t *testing.T) {
     t.Logf("PdhDll version %d\n", ver)
 }
 
-func checkErr(err error, testName string, t *testing.T) {
+func checkErr (err error, testName string, t *testing.T) {
     if err != nil {
         t.Fatalf("%s returned error code %#x\n", testName, err)
     }

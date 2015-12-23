@@ -46,7 +46,7 @@ type PdhDblCounterVal struct {
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372204(v=vs.85).aspx
-func PdhAddCounter(
+func PdhAddCounter (
     query       *syscall.Handle, 
     counterName string,
 ) (*syscall.Handle, error) {
@@ -63,19 +63,19 @@ func PdhAddCounter(
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372558(v=vs.85).aspx
-func PdhCloseQuery(query *syscall.Handle) error {
+func PdhCloseQuery (query *syscall.Handle) error {
     ret, _, _ := pdhCloseQuery.Call(uintptr(*query))
     return getError(ret)
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372563(v=vs.85).aspx
-func PdhCollectQueryData(query *syscall.Handle) error {
+func PdhCollectQueryData (query *syscall.Handle) error {
     ret, _, _ := pdhCollectQueryData.Call(uintptr(*query))
     return getError(ret)
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372605(v=vs.85).aspx
-func PdhExpandCounterPath(path string) ([]string, error) {
+func PdhExpandCounterPath (path string) ([]string, error) {
     var buffSize uint32
 
     // get number of paths
@@ -114,7 +114,7 @@ func PdhExpandCounterPath(path string) ([]string, error) {
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372630(v=vs.85).aspx
-func PdhGetDllVersion() (uint32, error) {
+func PdhGetDllVersion () (uint32, error) {
     var ver uint32
     ret, _, _ := pdhGetDllVersion.Call(uintptr(unsafe.Pointer(&ver)))
 
@@ -122,7 +122,7 @@ func PdhGetDllVersion() (uint32, error) {
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372637(v=vs.85).aspx
-func PdhGetFormattedCounterValue(counter *syscall.Handle) (*PdhDblCounterVal, error) {
+func PdhGetFormattedCounterValue (counter *syscall.Handle) (*PdhDblCounterVal, error) {
     var val PdhDblCounterVal
 
     ret, _, _ := pdhGetFormattedCounterValue.Call(
@@ -136,7 +136,7 @@ func PdhGetFormattedCounterValue(counter *syscall.Handle) (*PdhDblCounterVal, er
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372652(v=vs.85).aspx
-func PdhOpenQuery() (*syscall.Handle, error) {
+func PdhOpenQuery () (*syscall.Handle, error) {
     var query syscall.Handle
     ret, _, _ := pdhOpenQuery.Call(
         0,
@@ -148,14 +148,14 @@ func PdhOpenQuery() (*syscall.Handle, error) {
 }
  
 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa372665(v=vs.85).aspx
-func PdhRemoveCounter(counter *syscall.Handle) error {
+func PdhRemoveCounter (counter *syscall.Handle) error {
     ret, _, _ := pdhRemoveCounter.Call(uintptr(*counter))
     return getError(ret)
 }
 
 // getError converts PDH errors into golang error objects, unless the returnVal equals
 // ERROR_SUCCESS, then it just returns null.
-func getError(returnVal uintptr) error {
+func getError (returnVal uintptr) error {
     ret := uint32(returnVal)
     if ret == ERROR_SUCCESS {
         return nil
