@@ -10,7 +10,7 @@
 //
 //  -----------
 
-package dbgHelp
+package dbg
 
 import (
     "fmt"
@@ -18,7 +18,7 @@ import (
     "testing"
 )
 
-func TestSymlookup (t *testing.T) {
+func TestSymInitAndClose (t *testing.T) {
     fmt.Println("Modules Loaded")
 
     proc, err := syscall.GetCurrentProcess()
