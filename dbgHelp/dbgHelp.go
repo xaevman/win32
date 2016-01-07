@@ -239,7 +239,6 @@ func StringToGuid(data string) (GUID, error) {
 func SymCleanup(proc syscall.Handle) error {
     ret, _, err := symCleanup.Call(uintptr(proc))
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return err
     }
 
@@ -276,7 +275,6 @@ func SymFindFileInPath(
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return "", err
     }
 
@@ -298,7 +296,6 @@ func SymFromAddr(proc syscall.Handle, symAddr uint64) (*SYMBOL_INFOW, error) {
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return nil, err
     }
 
@@ -322,7 +319,6 @@ func SymGetLineFromAddr64(
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return nil, err
     }
 
@@ -341,7 +337,6 @@ func SymInitialize(
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return err
     }
 
@@ -366,7 +361,6 @@ func SymLoadModuleEx(
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return 0, err
     }
 
@@ -386,7 +380,6 @@ func SymSrvGetFileIndexInfo(fileName string, idxInfo *SYMSRV_INDEX_INFOW) error 
     )
 
     if uint32(ret) == 0 {
-        fmt.Println(err)
         return err
     }
 
@@ -402,35 +395,21 @@ func UTF16PtrToString(s uintptr) string {
 
 func onFindFile(fileNamePtr, context uintptr) uintptr {
     fileName := UTF16PtrToString(fileNamePtr)
-    fmt.Printf("Found symbol: %s\n", fileName)
 
     pdbInfo := (*PdbInfo)(unsafe.Pointer(context))
 
     err := SymSrvGetFileIndexInfo(fileName, &pdbInfo.SymSrvInfo)
     if err != nil {
-        fmt.Println(err)
         return uintptr(1)
     }
 
     if pdbInfo.SymSrvInfo.Age != pdbInfo.Age {
-        fmt.Printf(
-            "Age mismatch :: %d != %d\n",
-            pdbInfo.SymSrvInfo.Age,
-            pdbInfo.Age,
-        )
         return uintptr(1)
     }
 
     if pdbInfo.SymSrvInfo.Guid != pdbInfo.Guid {
-        fmt.Printf(
-            "Guid mismatch :: %v != %v\n",
-            pdbInfo.SymSrvInfo.Guid,
-            pdbInfo.Guid,
-        )
         return uintptr(1)
     }
-
-    fmt.Printf("Matched at path: %s\n", fileName)
 
     return uintptr(0)
 }
