@@ -126,6 +126,34 @@ type IMAGEHLP_LINEW64 struct {
     Address      uint64
 }
 
+type IMAGEHLP_MODULEW64 struct {
+    SizeOfStruct uint32
+    BaseOfImage uint64
+    ImageSize uint32
+    TimeDateStamp uint32
+    CheckSum uint32
+    NumSyms uint32
+    SymType uint16
+    ModuleName [32]uint16
+    ImageName [256]uint16
+    LoadedImageName [256]uint16
+    LoadedPdbName [256]uint16
+    CVSig uint32
+    CVData [MAX_PATH * 3]uint16
+    PdbSig uint32
+    PdbSig70 GUID
+    PdbAge uint32
+    PdbUnmatched uint32
+    DbgUnmatched uint32
+    LineNumbers uint32
+    GlobalSymbols uint32
+    TypeInfo uint32
+    SourceIndexed uint32
+    Publics uint32
+    MachineType uint32
+    Reserved uint32
+}
+
 type GUID struct {
     Data1 uint32
     Data2 uint16
@@ -158,28 +186,57 @@ var (
     symLoadModuleEx        = dbgHelpDll.NewProc("SymLoadModuleExW")
     symFromAddr            = dbgHelpDll.NewProc("SymFromAddrW")
     symGetLineFromAddr64   = dbgHelpDll.NewProc("SymGetLineFromAddrW64")
+    symGetModuleInfoW64    = dbgHelpDll.NewProc("SymGetModuleInfoW64")
+    symGetSymFromAddr64    = dbgHelpDll.NewProc("SymGetSymFromAddr64W")
     symCleanup             = dbgHelpDll.NewProc("SymCleanup")
 )
 
-func ResolveSymbol(proc syscall.Handle, symAddr uint64) (*SymbolInfo, error) {
-    symData, err := SymFromAddr(proc, symAddr)
-    if err != nil {
-        return nil, err
+func ResolveSymbol(proc syscall.Handle, symAddr uint64) (*SymbolInfo, []error) {
+    symData, err1  := SymFromAddr(proc, symAddr)
+    lineInfo, err2 := SymGetLineFromAddr64(proc, symAddr)
+
+    errors  := make([]error, 0)
+    symInfo := &SymbolInfo{}
+
+    if err1 == nil {
+        symInfo.Address = symData.Address
+        symInfo.Name    = syscall.UTF16ToString(symData.Name[:])
+    } else {
+        errors = append(errors, err1)
     }
 
-    lineInfo, err := SymGetLineFromAddr64(proc, symAddr)
-    if err != nil {
-        return nil, err
+    if err2 == nil {
+        symInfo.FileName   = UTF16PtrToString(lineInfo.FileName)
+        symInfo.LineNumber = lineInfo.LineNumber
+    } else {
+        errors = append(errors, err2)
     }
 
-    symInfo := &SymbolInfo{
-        Address    : symData.Address,
-        Name       : syscall.UTF16ToString(symData.Name[:]),
-        FileName   : UTF16PtrToString(lineInfo.FileName),
-        LineNumber : lineInfo.LineNumber,
+    if len(errors) > 0 {
+        return symInfo, errors
     }
 
     return symInfo, nil
+}
+
+func SymGetModuleInfoW64(
+    proc    syscall.Handle, 
+    address uint64,
+) (*IMAGEHLP_MODULEW64, error) {
+    modInfo := IMAGEHLP_MODULEW64{}
+    modInfo.SizeOfStruct = uint32(unsafe.Sizeof(modInfo))
+
+    ret, _, err := symGetModuleInfoW64.Call(
+        uintptr(proc),
+        uintptr(address),
+        uintptr(unsafe.Pointer(&modInfo)),
+    )
+
+    if uint32(ret) == 0 {
+        return nil, err
+    }
+
+    return &modInfo, nil
 }
 
 func StringToGuid(data string) (GUID, error) {
