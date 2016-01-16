@@ -117,6 +117,7 @@ type SYMBOL_INFOW struct {
     MaxNameLen   uint32
     Name         [MAX_SYM_NAME]uint16
 }
+var SYMBOL_INFOW_LEN = uint32(88)
 
 type IMAGEHLP_LINEW64 struct {
     SizeOfStruct uint32
@@ -188,27 +189,23 @@ var (
     symGetLineFromAddr64   = dbgHelpDll.NewProc("SymGetLineFromAddrW64")
     symGetModuleInfoW64    = dbgHelpDll.NewProc("SymGetModuleInfoW64")
     symGetSymFromAddr64    = dbgHelpDll.NewProc("SymGetSymFromAddr64W")
+    symUnloadModule64      = dbgHelpDll.NewProc("SymUnloadModule64")
     symCleanup             = dbgHelpDll.NewProc("SymCleanup")
+    symEnumSymbolsForAddr  = dbgHelpDll.NewProc("SymEnumSymbolsForAddrW")
 )
 
 func ResolveSymbol(proc syscall.Handle, symAddr uint64) (*SymbolInfo, []error) {
-    symData, err1  := SymFromAddr(proc, symAddr)
-    lineInfo, err2 := SymGetLineFromAddr64(proc, symAddr)
-
     errors  := make([]error, 0)
     symInfo := &SymbolInfo{}
 
-    if err1 == nil {
-        symInfo.Address = symData.Address
-        symInfo.Name    = syscall.UTF16ToString(symData.Name[:])
-    } else {
+    err1 := SymFromAddr(proc, symAddr, symInfo)
+    err2 := SymGetLineFromAddr64(proc, symAddr, symInfo)
+
+    if err1 != nil {
         errors = append(errors, err1)
     }
 
-    if err2 == nil {
-        symInfo.FileName   = UTF16PtrToString(lineInfo.FileName)
-        symInfo.LineNumber = lineInfo.LineNumber
-    } else {
+    if err2 != nil {
         errors = append(errors, err2)
     }
 
@@ -217,6 +214,22 @@ func ResolveSymbol(proc syscall.Handle, symAddr uint64) (*SymbolInfo, []error) {
     }
 
     return symInfo, nil
+}
+
+func SymUnloadModule(
+    proc    syscall.Handle,
+    address uint64,
+) error {
+    ret, _, err := symUnloadModule64.Call(
+        uintptr(proc),
+        uintptr(address),
+    )
+
+    if uint32(ret) == 0 {
+        return err
+    }
+
+    return nil
 }
 
 func SymGetModuleInfoW64(
@@ -338,9 +351,35 @@ func SymFindFileInPath(
     return syscall.UTF16ToString(buffer), nil
 }
 
-func SymFromAddr(proc syscall.Handle, symAddr uint64) (*SYMBOL_INFOW, error) {
+func SymEnumSymbolsForAddr(
+    proc    syscall.Handle, 
+    symAddr uint64, 
+    info    *SymbolInfo,
+) error {
+    fmt.Print("start symbol enum... ")
+    ret, _, err := symEnumSymbolsForAddr.Call(
+        uintptr(proc),
+        uintptr(symAddr),
+        syscall.NewCallback(onFindSymbol),
+        uintptr(unsafe.Pointer(info)),
+    )
+
+    if uint32(ret) == 0 {
+        fmt.Println("error")
+        return err
+    }
+
+    fmt.Println("success!")
+    return nil
+}
+
+func SymFromAddr(
+    proc    syscall.Handle, 
+    symAddr uint64,
+    info    *SymbolInfo,
+) error {
     symInfo             := SYMBOL_INFOW{}
-    symInfo.SizeOfStruct = uint32(unsafe.Sizeof(symInfo)) - uint32(MAX_SYM_NAME * 2)
+    symInfo.SizeOfStruct = SYMBOL_INFOW_LEN
     symInfo.MaxNameLen   = MAX_SYM_NAME
 
     tmp := uint64(0)
@@ -353,16 +392,20 @@ func SymFromAddr(proc syscall.Handle, symAddr uint64) (*SYMBOL_INFOW, error) {
     )
 
     if uint32(ret) == 0 {
-        return nil, err
+        return err
     }
 
-    return &symInfo, nil
+    info.Address = symInfo.Address
+    info.Name    = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
+
+    return nil
 }
 
 func SymGetLineFromAddr64(
     proc    syscall.Handle, 
     symAddr uint64,
-) (*IMAGEHLP_LINEW64, error) {
+    info    *SymbolInfo,
+) error {
     tmp := uint32(0)
 
     lineInfo             := IMAGEHLP_LINEW64{}
@@ -376,10 +419,13 @@ func SymGetLineFromAddr64(
     )
 
     if uint32(ret) == 0 {
-        return nil, err
+        return err
     }
 
-    return &lineInfo, nil
+    info.LineNumber = lineInfo.LineNumber
+    info.FileName   = UTF16PtrToString(lineInfo.FileName, MAX_PATH)
+
+    return nil
 }
 
 func SymInitialize(
@@ -443,15 +489,26 @@ func SymSrvGetFileIndexInfo(fileName string, idxInfo *SYMSRV_INDEX_INFOW) error 
     return nil
 }
 
-func UTF16PtrToString(s uintptr) string {
+func UTF16PtrToString(s uintptr, size int) string {
     if s == 0 {
         return ""
     }
-    return syscall.UTF16ToString((*[1 << 29]uint16)(unsafe.Pointer(s))[0:])
+
+    buffer := make([]uint16, size)
+    cstr   := (*([MAX_SYM_NAME]uint16))(unsafe.Pointer(s))
+
+    for i := 0; i < size; i++ {
+        buffer[i] = cstr[i]
+        if cstr[i] == 0 {
+            break
+        }
+    }
+
+    return syscall.UTF16ToString(buffer)
 }
 
 func onFindFile(fileNamePtr, context uintptr) uintptr {
-    fileName := UTF16PtrToString(fileNamePtr)
+    fileName := UTF16PtrToString(fileNamePtr, MAX_PATH)
 
     pdbInfo := (*PdbInfo)(unsafe.Pointer(context))
 
@@ -469,4 +526,21 @@ func onFindFile(fileNamePtr, context uintptr) uintptr {
     }
 
     return uintptr(0)
+}
+
+func onFindSymbol(infoPtr, sizePtr, contextPtr uintptr) uintptr {
+    fmt.Println("found symbol")
+
+    info    := (*SYMBOL_INFOW)(unsafe.Pointer(infoPtr))
+    context := (*SymbolInfo)(unsafe.Pointer(contextPtr))
+
+    context.Address = info.Address
+    context.Name    = UTF16PtrToString(
+        uintptr(unsafe.Pointer(&info.Name)), 
+        int(info.NameLen),
+    )
+
+    fmt.Printf("onFindSymbol: %+v\n", info)
+
+    return 0
 }
