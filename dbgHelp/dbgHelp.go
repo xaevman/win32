@@ -170,9 +170,11 @@ type PdbInfo struct {
 
 type SymbolInfo struct {
     Address    uint64
-    Name       string
+    Error      error
     FileName   string
     LineNumber uint32
+    Name       string
+    Offset     uint64
 }
 
 var (
@@ -194,26 +196,12 @@ var (
     symEnumSymbolsForAddr  = dbgHelpDll.NewProc("SymEnumSymbolsForAddrW")
 )
 
-func ResolveSymbol(proc syscall.Handle, symAddr uint64) (*SymbolInfo, []error) {
-    errors  := make([]error, 0)
-    symInfo := &SymbolInfo{}
-
-    err1 := SymFromAddr(proc, symAddr, symInfo)
-    err2 := SymGetLineFromAddr64(proc, symAddr, symInfo)
-
-    if err1 != nil {
-        errors = append(errors, err1)
-    }
-
-    if err2 != nil {
-        errors = append(errors, err2)
-    }
-
-    if len(errors) > 0 {
-        return symInfo, errors
-    }
-
-    return symInfo, nil
+func ResolveSymbol(proc syscall.Handle, symAddr uint64) *SymbolInfo {
+    symInfo := SymbolInfo{}
+    SymFromAddr(proc, symAddr, &symInfo)
+    SymGetLineFromAddr64(proc, symAddr, &symInfo)
+    
+    return &symInfo
 }
 
 func SymUnloadModule(
@@ -378,25 +366,29 @@ func SymFromAddr(
     symAddr uint64,
     info    *SymbolInfo,
 ) error {
+    var offset uint64
+
     symInfo             := SYMBOL_INFOW{}
     symInfo.SizeOfStruct = SYMBOL_INFOW_LEN
     symInfo.MaxNameLen   = MAX_SYM_NAME
 
-    tmp := uint64(0)
+    info.Address = symAddr
 
     ret, _, err := symFromAddr.Call(
         uintptr(proc),
         uintptr(symAddr),
-        uintptr(unsafe.Pointer(&tmp)),
+        uintptr(unsafe.Pointer(&offset)),
         uintptr(unsafe.Pointer(&symInfo)),
     )
 
     if uint32(ret) == 0 {
+        info.Error = err
         return err
     }
 
     info.Address = symInfo.Address
     info.Name    = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
+    info.Offset  = offset
 
     return nil
 }
@@ -419,6 +411,7 @@ func SymGetLineFromAddr64(
     )
 
     if uint32(ret) == 0 {
+        info.Error = err
         return err
     }
 
