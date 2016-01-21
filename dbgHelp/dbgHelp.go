@@ -398,7 +398,7 @@ func SymGetLineFromAddr64(
     symAddr uint64,
     info    *SymbolInfo,
 ) error {
-    tmp := uint32(0)
+    var offset uint32
 
     lineInfo             := IMAGEHLP_LINEW64{}
     lineInfo.SizeOfStruct = uint32(unsafe.Sizeof(lineInfo))
@@ -406,7 +406,7 @@ func SymGetLineFromAddr64(
     ret, _, err := symGetLineFromAddr64.Call(
         uintptr(proc),
         uintptr(symAddr),
-        uintptr(unsafe.Pointer(&tmp)),
+        uintptr(unsafe.Pointer(&offset)),
         uintptr(unsafe.Pointer(&lineInfo)),
     )
 
@@ -417,6 +417,7 @@ func SymGetLineFromAddr64(
 
     info.LineNumber = lineInfo.LineNumber
     info.FileName   = UTF16PtrToString(lineInfo.FileName, MAX_PATH)
+    info.Offset     = uint64(offset)
 
     return nil
 }
