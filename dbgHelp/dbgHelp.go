@@ -2,7 +2,7 @@
 //
 //  dbgHelp.go
 //
-//  Copyright (c) 2015, Jared Chavez. 
+//  Copyright (c) 2015, Jared Chavez.
 //  All rights reserved.
 //
 //  Use of this source code is governed by a BSD-style
@@ -21,40 +21,40 @@ import (
 )
 
 const (
-    ERROR_SUCCESS                    = uint32(0)
+    ERROR_SUCCESS = uint32(0)
 
-    MAX_PATH                         = 260
-    MAX_SYM_NAME                     = 2000
+    MAX_PATH     = 260
+    MAX_SYM_NAME = 2000
 
-    SYMSRV_VERSION                   = 2
+    SYMSRV_VERSION = 2
 
-    SSRVOPT_CALLBACK                 = 0x00000001
-    SSRVOPT_DWORD                    = 0x00000002
-    SSRVOPT_DWORDPTR                 = 0x00000004
-    SSRVOPT_GUIDPTR                  = 0x00000008
-    SSRVOPT_OLDGUIDPTR               = 0x00000010
-    SSRVOPT_UNATTENDED               = 0x00000020
-    SSRVOPT_NOCOPY                   = 0x00000040
-    SSRVOPT_GETPATH                  = 0x00000040
-    SSRVOPT_PARENTWIN                = 0x00000080
-    SSRVOPT_PARAMTYPE                = 0x00000100
-    SSRVOPT_SECURE                   = 0x00000200
-    SSRVOPT_TRACE                    = 0x00000400
-    SSRVOPT_SETCONTEXT               = 0x00000800
-    SSRVOPT_PROXY                    = 0x00001000
-    SSRVOPT_DOWNSTREAM_STORE         = 0x00002000
-    SSRVOPT_OVERWRITE                = 0x00004000
-    SSRVOPT_RESETTOU                 = 0x00008000
-    SSRVOPT_CALLBACKW                = 0x00010000
-    SSRVOPT_FLAT_DEFAULT_STORE       = 0x00020000
-    SSRVOPT_PROXYW                   = 0x00040000
-    SSRVOPT_MESSAGE                  = 0x00080000
-    SSRVOPT_SERVICE                  = 0x00100000   // deprecated
-    SSRVOPT_FAVOR_COMPRESSED         = 0x00200000
-    SSRVOPT_STRING                   = 0x00400000
-    SSRVOPT_WINHTTP                  = 0x00800000
-    SSRVOPT_WININET                  = 0x01000000
-    SSRVOPT_DONT_UNCOMPRESS          = 0x02000000
+    SSRVOPT_CALLBACK           = 0x00000001
+    SSRVOPT_DWORD              = 0x00000002
+    SSRVOPT_DWORDPTR           = 0x00000004
+    SSRVOPT_GUIDPTR            = 0x00000008
+    SSRVOPT_OLDGUIDPTR         = 0x00000010
+    SSRVOPT_UNATTENDED         = 0x00000020
+    SSRVOPT_NOCOPY             = 0x00000040
+    SSRVOPT_GETPATH            = 0x00000040
+    SSRVOPT_PARENTWIN          = 0x00000080
+    SSRVOPT_PARAMTYPE          = 0x00000100
+    SSRVOPT_SECURE             = 0x00000200
+    SSRVOPT_TRACE              = 0x00000400
+    SSRVOPT_SETCONTEXT         = 0x00000800
+    SSRVOPT_PROXY              = 0x00001000
+    SSRVOPT_DOWNSTREAM_STORE   = 0x00002000
+    SSRVOPT_OVERWRITE          = 0x00004000
+    SSRVOPT_RESETTOU           = 0x00008000
+    SSRVOPT_CALLBACKW          = 0x00010000
+    SSRVOPT_FLAT_DEFAULT_STORE = 0x00020000
+    SSRVOPT_PROXYW             = 0x00040000
+    SSRVOPT_MESSAGE            = 0x00080000
+    SSRVOPT_SERVICE            = 0x00100000 // deprecated
+    SSRVOPT_FAVOR_COMPRESSED   = 0x00200000
+    SSRVOPT_STRING             = 0x00400000
+    SSRVOPT_WINHTTP            = 0x00800000
+    SSRVOPT_WININET            = 0x01000000
+    SSRVOPT_DONT_UNCOMPRESS    = 0x02000000
 
     SYMOPT_CASE_INSENSITIVE          = 0x00000001
     SYMOPT_UNDNAME                   = 0x00000002
@@ -117,6 +117,7 @@ type SYMBOL_INFOW struct {
     MaxNameLen   uint32
     Name         [MAX_SYM_NAME]uint16
 }
+
 var SYMBOL_INFOW_LEN = uint32(88)
 
 type IMAGEHLP_LINEW64 struct {
@@ -128,31 +129,31 @@ type IMAGEHLP_LINEW64 struct {
 }
 
 type IMAGEHLP_MODULEW64 struct {
-    SizeOfStruct uint32
-    BaseOfImage uint64
-    ImageSize uint32
-    TimeDateStamp uint32
-    CheckSum uint32
-    NumSyms uint32
-    SymType uint16
-    ModuleName [32]uint16
-    ImageName [256]uint16
+    SizeOfStruct    uint32
+    BaseOfImage     uint64
+    ImageSize       uint32
+    TimeDateStamp   uint32
+    CheckSum        uint32
+    NumSyms         uint32
+    SymType         uint16
+    ModuleName      [32]uint16
+    ImageName       [256]uint16
     LoadedImageName [256]uint16
-    LoadedPdbName [256]uint16
-    CVSig uint32
-    CVData [MAX_PATH * 3]uint16
-    PdbSig uint32
-    PdbSig70 GUID
-    PdbAge uint32
-    PdbUnmatched uint32
-    DbgUnmatched uint32
-    LineNumbers uint32
-    GlobalSymbols uint32
-    TypeInfo uint32
-    SourceIndexed uint32
-    Publics uint32
-    MachineType uint32
-    Reserved uint32
+    LoadedPdbName   [256]uint16
+    CVSig           uint32
+    CVData          [MAX_PATH * 3]uint16
+    PdbSig          uint32
+    PdbSig70        GUID
+    PdbAge          uint32
+    PdbUnmatched    uint32
+    DbgUnmatched    uint32
+    LineNumbers     uint32
+    GlobalSymbols   uint32
+    TypeInfo        uint32
+    SourceIndexed   uint32
+    Publics         uint32
+    MachineType     uint32
+    Reserved        uint32
 }
 
 type GUID struct {
@@ -160,7 +161,24 @@ type GUID struct {
     Data2 uint16
     Data3 uint16
     Data4 [8]uint8
-} 
+}
+
+func (g GUID) String() string {
+    return fmt.Sprintf(
+        "%04X%02X%02X%01X%01X%01X%01X%01X%01X%01X%01X",
+        g.Data1,
+        g.Data2,
+        g.Data3,
+        g.Data4[0],
+        g.Data4[1],
+        g.Data4[2],
+        g.Data4[3],
+        g.Data4[4],
+        g.Data4[5],
+        g.Data4[6],
+        g.Data4[7],
+    )
+}
 
 type PdbInfo struct {
     Age        uint32
@@ -179,7 +197,7 @@ type SymbolInfo struct {
 
 var (
     // dll imports
-    dbgHelpDll  = syscall.NewLazyDLL("dbgHelp.dll")
+    dbgHelpDll = syscall.NewLazyDLL("dbgHelp.dll")
 
     // dbgHelp functions
     symSrvGetFileIndexInfo = dbgHelpDll.NewProc("SymSrvGetFileIndexInfoW")
@@ -196,16 +214,23 @@ var (
     symEnumSymbolsForAddr  = dbgHelpDll.NewProc("SymEnumSymbolsForAddrW")
 )
 
+func NewSymsrvIndexInfow() *SYMSRV_INDEX_INFOW {
+    idxInfo := SYMSRV_INDEX_INFOW{}
+    idxInfo.Sizeofstruct = uint32(unsafe.Sizeof(idxInfo))
+
+    return &idxInfo
+}
+
 func ResolveSymbol(proc syscall.Handle, symAddr uint64) *SymbolInfo {
     symInfo := SymbolInfo{}
     SymFromAddr(proc, symAddr, &symInfo)
     SymGetLineFromAddr64(proc, symAddr, &symInfo)
-    
+
     return &symInfo
 }
 
 func SymUnloadModule(
-    proc    syscall.Handle,
+    proc syscall.Handle,
     address uint64,
 ) error {
     ret, _, err := symUnloadModule64.Call(
@@ -221,7 +246,7 @@ func SymUnloadModule(
 }
 
 func SymGetModuleInfoW64(
-    proc    syscall.Handle, 
+    proc syscall.Handle,
     address uint64,
 ) (*IMAGEHLP_MODULEW64, error) {
     modInfo := IMAGEHLP_MODULEW64{}
@@ -246,7 +271,7 @@ func StringToGuid(data string) (GUID, error) {
     guidParts := strings.Split(data, "-")
     if len(guidParts) != 5 {
         return guid, fmt.Errorf(
-            "Invalid number of GUID sections (%d)", 
+            "Invalid number of GUID sections (%d)",
             len(guidParts),
         )
     }
@@ -274,7 +299,7 @@ func StringToGuid(data string) (GUID, error) {
 
     // Data4
     for i := 0; i < 2; i++ {
-        tmp, err := strconv.ParseUint(guidParts[3][i * 2:(i * 2) + 2], 16, 8)
+        tmp, err := strconv.ParseUint(guidParts[3][i*2:(i*2)+2], 16, 8)
         if err != nil {
             return guid, err
         }
@@ -283,12 +308,12 @@ func StringToGuid(data string) (GUID, error) {
     }
 
     for i := 0; i < 6; i++ {
-        tmp, err := strconv.ParseUint(guidParts[4][i * 2:(i * 2) + 2], 16, 8)
+        tmp, err := strconv.ParseUint(guidParts[4][i*2:(i*2)+2], 16, 8)
         if err != nil {
             return guid, err
         }
-        
-        guid.Data4[i + 2] = uint8(tmp)
+
+        guid.Data4[i+2] = uint8(tmp)
     }
 
     return guid, nil
@@ -304,19 +329,19 @@ func SymCleanup(proc syscall.Handle) error {
 }
 
 func SymFindFileInPath(
-    proc     syscall.Handle, 
-    fileName string, 
-    guid     GUID, 
-    age      uint32,
+    proc syscall.Handle,
+    fileName string,
+    guid GUID,
+    age uint32,
 ) (string, error) {
     buffer := make([]uint16, MAX_PATH)
 
-    idxInfo             := SYMSRV_INDEX_INFOW{}
+    idxInfo := SYMSRV_INDEX_INFOW{}
     idxInfo.Sizeofstruct = uint32(unsafe.Sizeof(idxInfo))
 
-    pdbInfo           := new(PdbInfo)
-    pdbInfo.Age        = age
-    pdbInfo.Guid       = guid
+    pdbInfo := new(PdbInfo)
+    pdbInfo.Age = age
+    pdbInfo.Guid = guid
     pdbInfo.SymSrvInfo = idxInfo
 
     ret, _, err := symFindFileInPath.Call(
@@ -340,9 +365,9 @@ func SymFindFileInPath(
 }
 
 func SymEnumSymbolsForAddr(
-    proc    syscall.Handle, 
-    symAddr uint64, 
-    info    *SymbolInfo,
+    proc syscall.Handle,
+    symAddr uint64,
+    info *SymbolInfo,
 ) error {
     fmt.Print("start symbol enum... ")
     ret, _, err := symEnumSymbolsForAddr.Call(
@@ -362,15 +387,15 @@ func SymEnumSymbolsForAddr(
 }
 
 func SymFromAddr(
-    proc    syscall.Handle, 
+    proc syscall.Handle,
     symAddr uint64,
-    info    *SymbolInfo,
+    info *SymbolInfo,
 ) error {
     var offset uint64
 
-    symInfo             := SYMBOL_INFOW{}
+    symInfo := SYMBOL_INFOW{}
     symInfo.SizeOfStruct = SYMBOL_INFOW_LEN
-    symInfo.MaxNameLen   = MAX_SYM_NAME
+    symInfo.MaxNameLen = MAX_SYM_NAME
 
     info.Address = symAddr
 
@@ -387,20 +412,20 @@ func SymFromAddr(
     }
 
     info.Address = symInfo.Address
-    info.Name    = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
-    info.Offset  = offset
+    info.Name = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
+    info.Offset = offset
 
     return nil
 }
 
 func SymGetLineFromAddr64(
-    proc    syscall.Handle, 
+    proc syscall.Handle,
     symAddr uint64,
-    info    *SymbolInfo,
+    info *SymbolInfo,
 ) error {
     var offset uint32
 
-    lineInfo             := IMAGEHLP_LINEW64{}
+    lineInfo := IMAGEHLP_LINEW64{}
     lineInfo.SizeOfStruct = uint32(unsafe.Sizeof(lineInfo))
 
     ret, _, err := symGetLineFromAddr64.Call(
@@ -416,15 +441,15 @@ func SymGetLineFromAddr64(
     }
 
     info.LineNumber = lineInfo.LineNumber
-    info.FileName   = UTF16PtrToString(lineInfo.FileName, MAX_PATH)
-    info.Offset     = uint64(offset)
+    info.FileName = UTF16PtrToString(lineInfo.FileName, MAX_PATH)
+    info.Offset = uint64(offset)
 
     return nil
 }
 
 func SymInitialize(
-    proc          syscall.Handle, 
-    searchPath    string, 
+    proc syscall.Handle,
+    searchPath string,
     invadeProcess bool,
 ) error {
     ret, _, err := symInitialize.Call(
@@ -441,10 +466,10 @@ func SymInitialize(
 }
 
 func SymLoadModuleEx(
-    proc     syscall.Handle,
-    imgName  string,
+    proc syscall.Handle,
+    imgName string,
     baseAddr uint64,
-    size     uint32,
+    size uint32,
 ) (uint64, error) {
     ret, _, err := symLoadModuleEx.Call(
         uintptr(proc),
@@ -489,7 +514,7 @@ func UTF16PtrToString(s uintptr, size int) string {
     }
 
     buffer := make([]uint16, size)
-    cstr   := (*([MAX_SYM_NAME]uint16))(unsafe.Pointer(s))
+    cstr := (*([MAX_SYM_NAME]uint16))(unsafe.Pointer(s))
 
     for i := 0; i < size; i++ {
         buffer[i] = cstr[i]
@@ -525,12 +550,12 @@ func onFindFile(fileNamePtr, context uintptr) uintptr {
 func onFindSymbol(infoPtr, sizePtr, contextPtr uintptr) uintptr {
     fmt.Println("found symbol")
 
-    info    := (*SYMBOL_INFOW)(unsafe.Pointer(infoPtr))
+    info := (*SYMBOL_INFOW)(unsafe.Pointer(infoPtr))
     context := (*SymbolInfo)(unsafe.Pointer(contextPtr))
 
     context.Address = info.Address
-    context.Name    = UTF16PtrToString(
-        uintptr(unsafe.Pointer(&info.Name)), 
+    context.Name = UTF16PtrToString(
+        uintptr(unsafe.Pointer(&info.Name)),
         int(info.NameLen),
     )
 
