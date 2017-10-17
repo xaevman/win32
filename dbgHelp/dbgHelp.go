@@ -14,6 +14,7 @@ package dbg
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"syscall"
@@ -155,6 +156,34 @@ type SYMBOL_INFOW struct {
 
 var SYMBOL_INFOW_LEN = uint32(88)
 
+// typedef enum _MINIDUMP_TYPE
+const (
+	MiniDumpNormal                         = 0x00000000
+	MiniDumpWithDataSegs                   = 0x00000001
+	MiniDumpWithFullMemory                 = 0x00000002
+	MiniDumpWithHandleData                 = 0x00000004
+	MiniDumpFilterMemory                   = 0x00000008
+	MiniDumpScanMemory                     = 0x00000010
+	MiniDumpWithUnloadedModules            = 0x00000020
+	MiniDumpWithIndirectlyReferencedMemory = 0x00000040
+	MiniDumpFilterModulePaths              = 0x00000080
+	MiniDumpWithProcessThreadData          = 0x00000100
+	MiniDumpWithPrivateReadWriteMemory     = 0x00000200
+	MiniDumpWithoutOptionalData            = 0x00000400
+	MiniDumpWithFullMemoryInfo             = 0x00000800
+	MiniDumpWithThreadInfo                 = 0x00001000
+	MiniDumpWithCodeSegs                   = 0x00002000
+	MiniDumpWithoutAuxiliaryState          = 0x00004000
+	MiniDumpWithFullAuxiliaryState         = 0x00008000
+	MiniDumpWithPrivateWriteCopyMemory     = 0x00010000
+	MiniDumpIgnoreInaccessibleMemory       = 0x00020000
+	MiniDumpWithTokenInformation           = 0x00040000
+	MiniDumpWithModuleHeaders              = 0x00080000
+	MiniDumpFilterTriage                   = 0x00100000
+	MiniDumpWithAvxXStateContext           = 0x00200000
+	MiniDumpValidTypeFlags                 = 0x003fffff
+)
+
 type IMAGEHLP_LINEW64 struct {
 	SizeOfStruct uint32
 	Key          uintptr
@@ -287,6 +316,40 @@ var (
 	symStackWalk64         = dbgHelpDll.NewProc("StackWalk64")
 	symUnloadModule64      = dbgHelpDll.NewProc("SymUnloadModule64")
 )
+
+// BOOL WINAPI MiniDumpWriteDump(
+//   _In_ HANDLE                            hProcess,
+//   _In_ DWORD                             ProcessId,
+//   _In_ HANDLE                            hFile,
+//   _In_ MINIDUMP_TYPE                     DumpType,
+//   _In_ PMINIDUMP_EXCEPTION_INFORMATION   ExceptionParam,
+//   _In_ PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
+//   _In_ PMINIDUMP_CALLBACK_INFORMATION    CallbackParam
+// );
+// fail == false
+func WriteMiniDump(proc syscall.Handle, pid, dumpType uint32, filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	ret, _, err := symMiniDumpWriteDump.Call(
+		uintptr(proc),
+		uintptr(pid),
+		f.Fd(),
+		uintptr(dumpType),
+		uintptr(0),
+		uintptr(0),
+		uintptr(0),
+	)
+
+	if ret == 0 {
+		return err
+	}
+
+	return nil
+}
 
 func NewSymsrvIndexInfow() *SYMSRV_INDEX_INFOW {
 	idxInfo := SYMSRV_INDEX_INFOW{}
