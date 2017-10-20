@@ -266,7 +266,7 @@ type GUID struct {
 
 func (g GUID) String() string {
 	return fmt.Sprintf(
-		"%04X%02X%02X%01X%01X%01X%01X%01X%01X%01X%01X",
+		"%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
 		g.Data1,
 		g.Data2,
 		g.Data3,

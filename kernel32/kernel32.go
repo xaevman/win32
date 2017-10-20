@@ -1,6 +1,7 @@
 package kernel32
 
 import (
+	"fmt"
 	"syscall"
 	"unsafe"
 )
@@ -38,6 +39,9 @@ const (
 	CONTEXT_FULL            = (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
 	CONTEXT_ALL             = (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
 	CONTEXT_XSTATE          = (CONTEXT_AMD64 | 0x00000040)
+
+	EVENT_MODIFY_STATE = 0x0002
+	EVENT_ALL_ACCESS   = (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 	STANDARD_RIGHTS_REQUIRED = 0x000F0000
 	STANDARD_RIGHTS_READ     = READ_CONTROL
@@ -202,24 +206,159 @@ var (
 
 	// functions
 	k32CloseHandle              = kernel32Dll.NewProc("CloseHandle")
+	k32CreateEvent              = kernel32Dll.NewProc("CreateEventExW")
 	k32CreateToolhelp32Snapshot = kernel32Dll.NewProc("CreateToolhelp32Snapshot")
 	k32GetThreadContext         = kernel32Dll.NewProc("GetThreadContext")
 	k32LocalFree                = kernel32Dll.NewProc("LocalFree")
+	k32OpenEvent                = kernel32Dll.NewProc("OpenEventW")
 	k32OpenProcess              = kernel32Dll.NewProc("OpenProcess")
 	k32OpenThread               = kernel32Dll.NewProc("OpenThread")
 	k32ResumeThread             = kernel32Dll.NewProc("ResumeThread")
 	k32SuspendThread            = kernel32Dll.NewProc("SuspendThread")
 	k32Thread32First            = kernel32Dll.NewProc("Thread32First")
 	k32Thread32Next             = kernel32Dll.NewProc("Thread32Next")
+	k32ReadProcessMemory        = kernel32Dll.NewProc("ReadProcessMemory")
+	k32SetEvent                 = kernel32Dll.NewProc("SetEvent")
+	k32WriteProcessMemory       = kernel32Dll.NewProc("WriteProcessMemory")
+	k32WaitOnAddress            = kernel32Dll.NewProc("WaitOnAddress")
 )
 
-func CloseHandle(handle syscall.Handle) error {
-	ret, _, err := k32CloseHandle.Call(uintptr(handle))
-	if uint32(ret) == 0 {
+// BOOL  WINAPI WaitOnAddress(
+//   _In_     VOID   volatile *Address,
+//   _In_     PVOID           CompareAddress,
+//   _In_     SIZE_T          AddressSize,
+//   _In_opt_ DWORD           dwMilliseconds
+// );
+// fail == 0
+func WaitOnAddress(watch, compare *byte, timeout uint32) error {
+	ret, _, err := k32WaitOnAddress.Call(
+		uintptr(unsafe.Pointer(watch)),
+		uintptr(unsafe.Pointer(compare)),
+		unsafe.Sizeof(watch),
+		uintptr(timeout),
+	)
+
+	if ret == 0 {
 		return err
 	}
 
 	return nil
+}
+
+// BOOL WINAPI WriteProcessMemory(
+//   _In_  HANDLE  hProcess,
+//   _In_  LPVOID  lpBaseAddress,
+//   _In_  LPCVOID lpBuffer,
+//   _In_  SIZE_T  nSize,
+//   _Out_ SIZE_T  *lpNumberOfBytesWritten
+// );
+// fail == 0
+func WriteProcessMemory(proc syscall.Handle, addr, size, buffer uintptr) error {
+	var written uint32
+	ret, _, err := k32WriteProcessMemory.Call(
+		uintptr(proc),
+		addr,
+		buffer,
+		size,
+		uintptr(unsafe.Pointer(&written)),
+	)
+
+	if ret == 0 {
+		return err
+	}
+
+	if uintptr(written) != size {
+		return fmt.Errorf("Written size mismatch (%d != %d)", written, size)
+	}
+
+	return nil
+}
+
+// HANDLE WINAPI CreateEventEx(
+//   _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
+//   _In_opt_ LPCTSTR               lpName,
+//   _In_     DWORD                 dwFlags,
+//   _In_     DWORD                 dwDesiredAccess
+// );
+// fail == 0
+func CreateEvent(name string) (uintptr, error) {
+	ret, _, err := k32CreateEvent.Call(
+		uintptr(0),
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(name))),
+		0,
+		EVENT_ALL_ACCESS,
+	)
+
+	if ret == 0 {
+		return 0, err
+	}
+
+	return ret, nil
+}
+
+// HANDLE WINAPI OpenEvent(
+//   _In_ DWORD   dwDesiredAccess,
+//   _In_ BOOL    bInheritHandle,
+//   _In_ LPCTSTR lpName
+// );
+// fail == 0
+func OpenEvent(inheritHandle bool, name string) (uintptr, error) {
+	inherit := 0
+	if inheritHandle {
+		inherit = 1
+	}
+
+	ret, _, err := k32OpenEvent.Call(
+		uintptr(EVENT_MODIFY_STATE),
+		uintptr(inherit),
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(name))),
+	)
+
+	if ret == 0 {
+		return 0, err
+	}
+
+	return ret, nil
+}
+
+// BOOL WINAPI SetEvent(
+//   _In_ HANDLE hEvent
+// );
+// fail == 0
+func SetEvent(event uintptr) error {
+	ret, _, err := k32SetEvent.Call(event)
+	if ret == 0 {
+		return err
+	}
+
+	return nil
+}
+
+// BOOL WINAPI ReadProcessMemory(
+//   _In_  HANDLE  hProcess,
+//   _In_  LPCVOID lpBaseAddress,
+//   _Out_ LPVOID  lpBuffer,
+//   _In_  SIZE_T  nSize,
+//   _Out_ SIZE_T  *lpNumberOfBytesRead
+// );
+// fail == 0
+func ReadProcessMemory(proc syscall.Handle, addr uint64, size uint64) ([]byte, error) {
+	buffer := make([]byte, size)
+	var bytesRead uint64
+
+	ret, _, err := k32ReadProcessMemory.Call(
+		uintptr(proc),
+		uintptr(addr),
+		uintptr(unsafe.Pointer(&buffer[0])),
+		uintptr(size),
+		uintptr(unsafe.Pointer(&bytesRead)),
+	)
+
+	if ret == 0 {
+		return nil, err
+	}
+
+	return buffer, nil
 }
 
 // HANDLE WINAPI CreateToolhelp32Snapshot(
