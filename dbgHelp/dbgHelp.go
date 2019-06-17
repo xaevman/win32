@@ -588,9 +588,11 @@ func SymFromAddr(
 		return err
 	}
 
-	info.Address = symInfo.Address
-	info.Name = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
-	info.Offset = offset
+	if symInfo.NameLen > 0 {
+		info.Address = symInfo.Address
+		info.Name = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
+		info.Offset = offset
+	}
 
 	return nil
 }
