@@ -589,8 +589,13 @@ func SymFromAddr(
 	}
 
 	if symInfo.NameLen > 0 {
+		cNameLen := symInfo.NameLen
+		if cNameLen > MAX_SYM_NAME {
+			cNameLen = MAX_SYM_NAME
+		}
+
 		info.Address = symInfo.Address
-		info.Name = syscall.UTF16ToString(symInfo.Name[:symInfo.NameLen])
+		info.Name = syscall.UTF16ToString(symInfo.Name[:cNameLen])
 		info.Offset = offset
 	}
 
